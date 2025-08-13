@@ -334,7 +334,7 @@
                         <label for="eor90">Extent of Resection ≥90%</label>
                         <select id="eor90">
                             <option value="0">No (&lt;90%)</option>
-                            <option value="1">Yes (≥90%)</option>
+                            <option value="1" selected>Yes (≥90%)</option>
                         </select>
                     </div>
 
@@ -450,12 +450,13 @@
             // Simulate calculation delay for better UX
             setTimeout(() => {
                 const inputs = getInputValues();
+                console.log('Current inputs:', inputs); // Debug log
                 const prediction = computeLogisticRegression(inputs);
                 displayResults(prediction, inputs);
                 
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('results').classList.remove('hidden');
-            }, 800);
+            }, 500);
         }
 
         function getInputValues() {
@@ -464,9 +465,9 @@
                 gender: parseInt(document.getElementById('gender').value) || 0,
                 mgmt: parseInt(document.getElementById('mgmt').value) || 0,
                 preopVolume: parseFloat(document.getElementById('preopVolume').value) || 30,
-                eor90: parseInt(document.getElementById('eor90').value) || 1,
+                eor90: parseInt(document.getElementById('eor90').value) || 0,
                 location: parseInt(document.getElementById('location').value) || 0,
-                ces: parseInt(document.getElementById('ces').value) || 1,
+                ces: parseInt(document.getElementById('ces').value) || 0,
                 imes: parseFloat(document.getElementById('imes').value) || 0.8
             };
         }
@@ -533,7 +534,7 @@
                     name: 'Extent of Resection',
                     value: inputs.eor90 === 1 ? '≥90%' : '<90%',
                     impact: inputs.eor90 === 1 ? 'positive' : 'negative',
-                    description: inputs.eor90 === 1 ? 'High extent of resection favorable for survival' : 'Lower extent of resection associated with worse outcomes'
+                    description: inputs.eor90 === 1 ? 'High extent of resection (≥90%) favorable for survival' : 'Lower extent of resection (<90%) associated with worse outcomes'
                 },
                 {
                     name: 'Cortical Excitability Score',
@@ -572,11 +573,23 @@
 
         // Add input change listeners for real-time updates
         ['age', 'gender', 'mgmt', 'preopVolume', 'eor90', 'location', 'ces', 'imes'].forEach(id => {
-            document.getElementById(id).addEventListener('change', function() {
-                // Auto-calculate on input change with debouncing
-                clearTimeout(this.updateTimer);
-                this.updateTimer = setTimeout(calculatePrediction, 300);
-            });
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', function() {
+                    console.log(`${id} changed to:`, this.value); // Debug log
+                    // Auto-calculate on input change with debouncing
+                    clearTimeout(window.updateTimer);
+                    window.updateTimer = setTimeout(calculatePrediction, 300);
+                });
+                
+                // Also add input event for text inputs
+                if (element.type === 'number') {
+                    element.addEventListener('input', function() {
+                        clearTimeout(window.updateTimer);
+                        window.updateTimer = setTimeout(calculatePrediction, 500);
+                    });
+                }
+            }
         });
     </script>
 </body>
