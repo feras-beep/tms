@@ -286,16 +286,19 @@
         }
 
         .ces-option.ces-0.active {
-            border-color: #48bb78;
-            background: rgba(72, 187, 120, 0.15);
-        }
-
-        .ces-option.ces-1.active {
+            /* CES=0: 80% survival - neutral (yellow) */
             border-color: #ecc94b;
             background: rgba(236, 201, 75, 0.15);
         }
 
+        .ces-option.ces-1.active {
+            /* CES=1: 94% survival - best outcome (green) */
+            border-color: #48bb78;
+            background: rgba(72, 187, 120, 0.15);
+        }
+
         .ces-option.ces-2.active {
+            /* CES=2: 57% survival - worst outcome (red) */
             border-color: #f56565;
             background: rgba(245, 101, 101, 0.15);
         }
@@ -1091,12 +1094,20 @@
                 icon: ageImpact === 'positive' ? '&#10003;' : (ageImpact === 'negative' ? '&#10007;' : '&#8212;')
             });
 
-            // MGMT
+            // MGMT - impact depends on model (bilateral has negative coefficient, unilateral has positive)
+            let mgmtImpact;
+            if (currentModel === 'bilateral') {
+                // Bilateral model: MGMT coefficient is -0.1645 (methylated = slightly negative effect)
+                mgmtImpact = inputValues.mgmt ? 'negative' : 'neutral';
+            } else {
+                // Unilateral model: MGMT coefficient is +0.1188 (methylated = positive effect)
+                mgmtImpact = inputValues.mgmt ? 'positive' : 'negative';
+            }
             factors.push({
                 name: 'MGMT Status',
                 value: inputValues.mgmt ? 'Methylated' : 'Unmethylated',
-                impact: inputValues.mgmt ? 'positive' : 'negative',
-                icon: inputValues.mgmt ? '&#10003;' : '&#10007;'
+                impact: mgmtImpact,
+                icon: mgmtImpact === 'positive' ? '&#10003;' : (mgmtImpact === 'negative' ? '&#10007;' : '&#8212;')
             });
 
             // EoR
@@ -1108,8 +1119,8 @@
             });
 
             if (currentModel === 'bilateral') {
-                // CES
-                const cesImpact = inputValues.ces === 0 ? 'positive' : (inputValues.ces === 1 ? 'neutral' : 'negative');
+                // CES - impact based on actual survival rates: CES=1 (94%) > CES=0 (80%) > CES=2 (57%)
+                const cesImpact = inputValues.ces === 1 ? 'positive' : (inputValues.ces === 0 ? 'neutral' : 'negative');
                 const cesDesc = inputValues.ces === 0 ? '80% survival' :
                                (inputValues.ces === 1 ? '94% survival' : '57% survival');
                 factors.push({
