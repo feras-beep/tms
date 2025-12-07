@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>nTMS-based GBM Survival Prediction Calculator</title>
+    <title>nTMS GBM Survival Calculator</title>
     <style>
         * {
             margin: 0;
@@ -13,597 +13,1142 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
             padding: 20px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
         }
 
+        /* Header */
         .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
-            padding: 30px;
             text-align: center;
+            padding: 30px 20px;
+            color: white;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2.2em;
+            margin-bottom: 8px;
             font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
+            font-size: 1em;
+            opacity: 0.7;
+            color: #a0aec0;
         }
 
-        .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        /* Model Toggle */
+        .model-toggle {
+            display: flex;
+            justify-content: center;
             gap: 0;
+            margin: 25px auto;
+            max-width: 500px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 4px;
         }
 
-        .input-panel, .results-panel {
-            padding: 40px;
+        .model-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            color: #a0aec0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
 
-        .input-panel {
-            border-right: 1px solid #eee;
-            background: #f8f9fa;
+        .model-btn:hover {
+            color: white;
         }
 
-        .section {
-            margin-bottom: 30px;
+        .model-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .section-title {
-            font-size: 1.3em;
+        .model-btn .model-name {
             font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #3498db;
         }
 
+        .model-btn .model-desc {
+            font-size: 0.75em;
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .card-title {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        /* Form Elements */
         .form-group {
             margin-bottom: 20px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
         }
 
         .form-group label {
             display: block;
             font-weight: 500;
-            color: #34495e;
+            color: #e2e8f0;
             margin-bottom: 8px;
+            font-size: 0.9em;
         }
 
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e1e8ed;
-            border-radius: 8px;
+            padding: 14px 16px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            transition: all 0.3s ease;
         }
 
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a0aec0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+            color: white;
         }
 
         .help-text {
-            font-size: 0.85em;
-            color: #7f8c8d;
-            margin-top: 5px;
+            font-size: 0.8em;
+            color: #718096;
+            margin-top: 6px;
+            line-height: 1.4;
         }
 
-        .calculate-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            font-weight: 600;
+        /* Range Indicator */
+        .range-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.75em;
+            color: #718096;
+        }
+
+        /* Input with unit */
+        .input-with-unit {
+            position: relative;
+        }
+
+        .input-with-unit input {
+            padding-right: 60px;
+        }
+
+        .input-unit {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #718096;
+            font-size: 0.9em;
+            pointer-events: none;
+        }
+
+        /* Toggle Pills for binary choices */
+        .toggle-pills {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-pill {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            color: #a0aec0;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .calculate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
-        }
-
-        .calculate-btn:active {
-            transform: translateY(0);
-        }
-
-        .results-panel {
-            background: white;
-        }
-
-        .prediction-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 12px;
             text-align: center;
-            margin-bottom: 30px;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
-        .prediction-value {
-            font-size: 3em;
+        .toggle-pill:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .toggle-pill.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+
+        .toggle-pill.positive.active {
+            border-color: #48bb78;
+            background: rgba(72, 187, 120, 0.15);
+            color: #48bb78;
+        }
+
+        .toggle-pill.negative.active {
+            border-color: #f56565;
+            background: rgba(245, 101, 101, 0.15);
+            color: #f56565;
+        }
+
+        /* CES Visual Selector */
+        .ces-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ces-option {
+            flex: 1;
+            padding: 14px 8px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            color: #a0aec0;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .ces-option:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .ces-option.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.15);
+            color: white;
+        }
+
+        .ces-option.ces-0.active {
+            border-color: #48bb78;
+            background: rgba(72, 187, 120, 0.15);
+        }
+
+        .ces-option.ces-1.active {
+            border-color: #ecc94b;
+            background: rgba(236, 201, 75, 0.15);
+        }
+
+        .ces-option.ces-2.active {
+            border-color: #f56565;
+            background: rgba(245, 101, 101, 0.15);
+        }
+
+        .ces-value {
+            font-size: 1.5em;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
+        }
+
+        .ces-label {
+            font-size: 0.7em;
+            opacity: 0.8;
+        }
+
+        /* Results Panel */
+        .results-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Prediction Card */
+        .prediction-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prediction-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10%, 10%); }
+        }
+
+        .prediction-card.unilateral {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .prediction-content {
+            position: relative;
+            z-index: 1;
         }
 
         .prediction-label {
-            font-size: 1.1em;
+            font-size: 0.9em;
             opacity: 0.9;
+            color: white;
+            margin-bottom: 8px;
         }
 
-        .risk-indicator {
-            display: inline-block;
-            padding: 8px 20px;
+        .prediction-value {
+            font-size: 4em;
+            font-weight: 800;
+            color: white;
+            line-height: 1;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .prediction-subtitle {
+            font-size: 0.85em;
+            opacity: 0.8;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
             border-radius: 20px;
             font-weight: 600;
-            margin-top: 15px;
+            font-size: 0.85em;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            backdrop-filter: blur(10px);
         }
 
-        .risk-low { background: #27ae60; }
-        .risk-moderate { background: #f39c12; }
-        .risk-high { background: #e74c3c; }
+        .risk-badge.favorable { background: rgba(72, 187, 120, 0.9); }
+        .risk-badge.intermediate { background: rgba(236, 201, 75, 0.9); color: #1a1a2e; }
+        .risk-badge.poor { background: rgba(245, 101, 101, 0.9); }
 
-        .interpretation {
-            background: #ecf0f1;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-        }
-
-        .interpretation h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
-
-        .interpretation ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .interpretation li {
-            padding: 8px 0;
-            border-bottom: 1px solid #d5dbdb;
-            color: #34495e;
-        }
-
-        .interpretation li:last-child {
-            border-bottom: none;
-        }
-
-        .clinical-context {
-            background: linear-gradient(135deg, #e8f4f8 0%, #f4f9fc 100%);
-            border-left: 4px solid #3498db;
-            padding: 25px;
-            margin-top: 30px;
-        }
-
-        .clinical-context h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-
-        .clinical-context p {
-            color: #34495e;
-            line-height: 1.6;
-            margin-bottom: 12px;
-        }
-
-        .warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 15px;
-            color: #856404;
-            margin-top: 20px;
-        }
-
-        .warning strong {
-            color: #d68910;
-        }
-
-        @media (max-width: 768px) {
-            .content {
-                grid-template-columns: 1fr;
-            }
-            
-            .input-panel {
-                border-right: none;
-                border-bottom: 1px solid #eee;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+        .risk-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            background: currentColor;
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
+        /* Survival Gauge */
+        .survival-gauge {
+            margin: 20px 0 10px;
+            position: relative;
+        }
+
+        .gauge-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            background: white;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .gauge-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.75em;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* Model Stats */
         .model-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }
 
-        .stat-card {
-            background: white;
-            border: 1px solid #e1e8ed;
-            border-radius: 8px;
-            padding: 15px;
+        .stat-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
             text-align: center;
         }
 
         .stat-value {
             font-size: 1.4em;
-            font-weight: 600;
-            color: #2c3e50;
+            font-weight: 700;
+            color: #667eea;
         }
 
         .stat-label {
+            font-size: 0.75em;
+            color: #718096;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Factor List */
+        .factor-list {
+            list-style: none;
+        }
+
+        .factor-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .factor-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .factor-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 0.9em;
-            color: #7f8c8d;
-            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .factor-icon.positive {
+            background: rgba(72, 187, 120, 0.15);
+            color: #48bb78;
+        }
+
+        .factor-icon.negative {
+            background: rgba(245, 101, 101, 0.15);
+            color: #f56565;
+        }
+
+        .factor-icon.neutral {
+            background: rgba(236, 201, 75, 0.15);
+            color: #ecc94b;
+        }
+
+        .factor-content {
+            flex: 1;
+        }
+
+        .factor-name {
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 0.9em;
+            margin-bottom: 2px;
+        }
+
+        .factor-value {
+            font-size: 0.8em;
+            color: #718096;
+        }
+
+        /* Collapsible Section */
+        .collapsible {
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.03);
+            cursor: pointer;
+            color: #e2e8f0;
+            font-weight: 500;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .collapsible-icon {
+            transition: transform 0.3s ease;
+            color: #718096;
+        }
+
+        .collapsible.open .collapsible-icon {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible.open .collapsible-content {
+            max-height: 600px;
+        }
+
+        .collapsible-inner {
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* Coefficient Table */
+        .coef-table {
+            width: 100%;
+            font-size: 0.85em;
+            border-collapse: collapse;
+        }
+
+        .coef-table th,
+        .coef-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .coef-table th {
+            color: #718096;
+            font-weight: 500;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .coef-table td {
+            color: #e2e8f0;
+        }
+
+        .coef-table tr.highlight td {
+            color: #ecc94b;
+            font-weight: 500;
+        }
+
+        /* Warning Banner */
+        .warning-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(236, 201, 75, 0.1);
+            border: 1px solid rgba(236, 201, 75, 0.3);
+            border-radius: 12px;
+            color: #ecc94b;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        .warning-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Section transition */
+        .section-animate {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .section-animate.hiding {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .prediction-value {
+                font-size: 3em;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .model-toggle {
+                flex-direction: column;
+            }
+
+            .ces-selector {
+                flex-direction: column;
+            }
+
+            .toggle-pills {
+                flex-direction: column;
+            }
+
+            .model-stats {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>nTMS-based GBM Survival Prediction</h1>
-            <p>Multivariable Logistic Regression incorporating Cortical Excitability Metrics</p>
-            <div style="margin-top: 20px;">
-                <img src="ntms-image.png" alt="nTMS mapping visualization showing brain tumor and motor evoked potentials" 
-                     style="max-width: 300px; height: auto; border-radius: 8px; border: 2px solid rgba(255,255,255,0.3);">
-            </div>
+        <header class="header">
+            <h1>nTMS GBM Survival Prediction</h1>
+            <p>Cortical Excitability-Based Prognostic Calculator</p>
+        </header>
+
+        <!-- Model Toggle -->
+        <div class="model-toggle">
+            <button class="model-btn active" id="btn-bilateral" onclick="setModel('bilateral')">
+                <span class="model-name">Bilateral Mapping</span>
+                <span class="model-desc">CES + IMES (n=46)</span>
+            </button>
+            <button class="model-btn" id="btn-unilateral" onclick="setModel('unilateral')">
+                <span class="model-name">Unilateral Mapping</span>
+                <span class="model-desc">IntraM1 Ratio (n=50)</span>
+            </button>
         </div>
 
-        <div class="content">
+        <div class="main-content">
+            <!-- Input Panel -->
             <div class="input-panel">
-                <div class="section">
-                    <h2 class="section-title">Clinical Characteristics</h2>
-                    
+                <!-- Clinical Factors -->
+                <div class="card">
+                    <div class="card-title">Clinical Factors</div>
+
                     <div class="form-group">
-                        <label for="age">Age (years)</label>
-                        <input type="number" id="age" value="60" min="18" max="90">
+                        <label>Age</label>
+                        <div class="input-with-unit">
+                            <input type="number" id="age" value="57" min="18" max="90">
+                            <span class="input-unit">years</span>
+                        </div>
+                        <div class="range-indicator">
+                            <span>18</span>
+                            <span>Cohort mean: 55</span>
+                            <span>90</span>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="gender">Gender</label>
-                        <select id="gender">
-                            <option value="0">Female</option>
-                            <option value="1">Male</option>
-                        </select>
+                        <label>MGMT Methylation</label>
+                        <div class="toggle-pills">
+                            <div class="toggle-pill negative active" data-value="0" onclick="setToggle('mgmt', 0)">Unmethylated</div>
+                            <div class="toggle-pill positive" data-value="1" onclick="setToggle('mgmt', 1)">Methylated</div>
+                        </div>
+                        <input type="hidden" id="mgmt" value="0">
                     </div>
 
                     <div class="form-group">
-                        <label for="mgmt">MGMT Methylation Status</label>
-                        <select id="mgmt">
-                            <option value="0">Unmethylated</option>
-                            <option value="1">Methylated</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="preopVolume">Preoperative Tumor Volume (cm³)</label>
-                        <input type="number" id="preopVolume" value="30" min="0" step="0.1">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="eor90">Extent of Resection ≥90%</label>
-                        <select id="eor90">
-                            <option value="0">No (&lt;90%)</option>
-                            <option value="1" selected>Yes (≥90%)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="location">Tumor Location</label>
-                        <select id="location">
-                            <option value="0">Frontal</option>
-                            <option value="1">Parietal</option>
-                            <option value="2">Temporal</option>
-                            <option value="3">Other</option>
-                        </select>
+                        <label>Extent of Resection</label>
+                        <div class="toggle-pills">
+                            <div class="toggle-pill negative" data-value="0" onclick="setToggle('eor95', 0)">&lt; 95%</div>
+                            <div class="toggle-pill positive active" data-value="1" onclick="setToggle('eor95', 1)">&ge; 95%</div>
+                        </div>
+                        <input type="hidden" id="eor95" value="1">
+                        <div class="help-text">95% threshold provides optimal prognostic discrimination (OR=2.53)</div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h2 class="section-title">nTMS Excitability Metrics</h2>
-                    
+                <!-- nTMS Metrics - Bilateral -->
+                <div class="card section-animate" id="bilateral-section">
+                    <div class="card-title">nTMS Bilateral Metrics</div>
+
                     <div class="form-group">
-                        <label for="ces">Cortical Excitability Score (CES)</label>
-                        <select id="ces">
-                            <option value="0">0 - Normal bilateral excitability</option>
-                            <option value="1">1 - One functional area abnormal</option>
-                            <option value="2">2 - Both functional areas abnormal</option>
-                        </select>
-                        <div class="help-text">Combined score of abnormal interhemispheric RMT ratios (UL + LL)</div>
+                        <label>Cortical Excitability Score (CES)</label>
+                        <div class="ces-selector">
+                            <div class="ces-option ces-0 active" data-value="0" onclick="setCES(0)">
+                                <div class="ces-value">0</div>
+                                <div class="ces-label">Normal</div>
+                            </div>
+                            <div class="ces-option ces-1" data-value="1" onclick="setCES(1)">
+                                <div class="ces-value">1</div>
+                                <div class="ces-label">One abnormal</div>
+                            </div>
+                            <div class="ces-option ces-2" data-value="2" onclick="setCES(2)">
+                                <div class="ces-value">2</div>
+                                <div class="ces-label">Both abnormal</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="ces" value="0">
+                        <div class="help-text">Sum of abnormal interhemispheric RMT ratios (UL + LL)</div>
                     </div>
 
                     <div class="form-group">
-                        <label for="imes">IntraM1 Excitability Score (IMES)</label>
-                        <input type="number" id="imes" value="0.8" min="0" max="3" step="0.1">
-                        <div class="help-text">Ratio between RMT for lower limb and upper limb in tumor hemisphere</div>
+                        <label>IMES Ratio</label>
+                        <input type="number" id="imes" value="1.0" min="0.2" max="2.5" step="0.05">
+                        <div class="range-indicator">
+                            <span>0.28</span>
+                            <span>LL/UL RMT in tumor hemisphere</span>
+                            <span>2.10</span>
+                        </div>
                     </div>
                 </div>
 
-                <button class="calculate-btn" onclick="calculatePrediction()">
-                    Calculate Survival Prediction
-                </button>
+                <!-- nTMS Metrics - Unilateral -->
+                <div class="card section-animate hidden" id="unilateral-section">
+                    <div class="card-title">nTMS Unilateral Metrics</div>
+
+                    <div class="form-group">
+                        <label>IntraM1 Tumor Ratio</label>
+                        <input type="number" id="intram1tumor" value="1.6" min="0.5" max="3.0" step="0.05">
+                        <div class="range-indicator">
+                            <span>0.57</span>
+                            <span>LL/UL RMT in tumor hemisphere</span>
+                            <span>2.93</span>
+                        </div>
+                        <div class="help-text">Higher ratios trend toward better survival (OR=6.84, p=0.053)</div>
+                    </div>
+                </div>
             </div>
 
+            <!-- Results Panel -->
             <div class="results-panel">
-                <div id="loading" class="loading hidden">
-                    <div class="spinner"></div>
-                </div>
-
-                <div id="results" class="hidden">
-                    <div class="prediction-card">
-                        <div class="prediction-value" id="survival-probability">--</div>
+                <!-- Prediction Card -->
+                <div class="prediction-card bilateral" id="prediction-card">
+                    <div class="prediction-content">
                         <div class="prediction-label">12-Month Survival Probability</div>
-                        <div class="risk-indicator" id="risk-category">Calculate to see results</div>
-                    </div>
+                        <div class="prediction-value" id="survival-probability">--</div>
+                        <div class="prediction-subtitle" id="model-indicator">Bilateral Model</div>
 
-                    <div class="model-stats">
-                        <div class="stat-card">
-                            <div class="stat-value">77</div>
-                            <div class="stat-label">Patients</div>
+                        <div class="survival-gauge">
+                            <div class="gauge-bar">
+                                <div class="gauge-fill" id="gauge-fill" style="width: 0%"></div>
+                            </div>
+                            <div class="gauge-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-value">66.2%</div>
-                            <div class="stat-label">12-mo Survival</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">20.5</div>
-                            <div class="stat-label">Mean OS (mo)</div>
-                        </div>
-                    </div>
 
-                    <div class="interpretation">
-                        <h3>Risk Factors Impact</h3>
-                        <ul id="interpretation-list">
-                            <!-- Dynamic content will be added here -->
-                        </ul>
+                        <div class="risk-badge favorable" id="risk-badge">
+                            <span class="risk-dot"></span>
+                            <span id="risk-text">Calculating...</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="clinical-context">
-                    <h3>nTMS Motor Mapping Technology</h3>
-                    <p><strong>Navigated Transcranial Magnetic Stimulation (nTMS)</strong> enables precise preoperative mapping of motor cortex function in relation to brain tumors. The image above demonstrates nTMS mapping with motor evoked potentials (MEPs) recorded from target muscles during cortical stimulation.</p>
-                    
-                    <h3>Clinical Context & Research Background</h3>
-                    <p><strong>Actual Research Results:</strong> This calculator implements the validated logistic regression model from your King's College Hospital GBM cohort study (n=77 patients) with real statistical coefficients.</p>
-                    
-                    <p><strong>Key Validated Findings:</strong></p>
-                    <ul style="margin: 10px 0; padding-left: 20px;">
-                        <li><strong>CES (Cortical Excitability Score):</strong> Higher scores significantly associated with worse 12-month survival (OR=0.35, p=0.038)</li>
-                        <li><strong>IMES (IntraM1 Excitability Score):</strong> Higher scores trend toward better survival (OR=1.89, p=0.069)</li>
-                        <li><strong>MGMT Methylation:</strong> Favorable prognostic factor (OR=1.69)</li>
-                        <li><strong>Age Effect:</strong> Each year increases risk (OR=0.96 per year)</li>
+                <!-- Model Stats -->
+                <div class="model-stats" id="model-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-n">46</div>
+                        <div class="stat-label">Patients</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-survival">73.9%</div>
+                        <div class="stat-label">12-mo Survival</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-r2">0.149</div>
+                        <div class="stat-label">Pseudo R&sup2;</div>
+                    </div>
+                </div>
+
+                <!-- Risk Factors -->
+                <div class="card">
+                    <div class="card-title">Risk Factor Impact</div>
+                    <ul class="factor-list" id="factor-list">
+                        <!-- Dynamic content -->
                     </ul>
-                    
-                    <p><strong>Model Performance:</strong> The combined clinical + nTMS model achieved C-statistic = 0.81 vs 0.72 for clinical factors alone, representing significant improvement in prognostic accuracy.</p>
-                    
-                    <p><strong>Clinical Impact:</strong> 89.1% of patients with bilateral nTMS mapping showed abnormal excitability patterns. Patients with CES=2 had markedly worse survival (47.8%) compared to CES≤1 (77.8-80.0%).</p>
                 </div>
 
-                <div class="warning">
-                    <strong>Research Use Only:</strong> This model is based on research findings and should not replace clinical judgment or established prognostic tools in patient care. Results are for research and educational purposes only.
+                <!-- Model Details (Collapsible) -->
+                <div class="collapsible" id="model-details">
+                    <div class="collapsible-header" onclick="toggleCollapsible('model-details')">
+                        <span>Model Coefficients & Details</span>
+                        <span class="collapsible-icon">&#9662;</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="collapsible-inner" id="coef-table-container">
+                            <!-- Dynamic content -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning -->
+                <div class="warning-banner">
+                    <span class="warning-icon">&#9888;</span>
+                    <span><strong>Research Use Only:</strong> This calculator is based on the King's College Hospital GBM cohort and should not replace clinical judgment. Results are for research and educational purposes.</span>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ACTUAL logistic regression coefficients based on the real data analysis (n=77)
-        // These coefficients are derived from the statistical analysis of your dataset
-        const modelCoefficients = {
-            intercept: 1.5,       // Calibrated for 66.2% baseline survival rate
-            age: -0.05,           // Older age = worse survival (OR~0.96 per year)
-            gender: -0.1,         // Male = slightly worse survival (OR=0.96)
-            mgmt: 0.6,            // MGMT methylated = better survival (OR=1.69)
-            preopVolume: -0.005,  // Larger volume = worse survival
-            eor90: 0.7,           // EoR ≥90% = better survival (OR=1.79)
-            location: 0.0,        // No significant location effect observed
-            ces: -0.8,            // Higher CES = worse survival (OR=0.35)
-            imes: 0.5             // Higher IMES = better survival (OR=1.89)
+        let currentModel = 'bilateral';
+        let inputValues = {
+            age: 57,
+            mgmt: 0,
+            eor95: 1,
+            ces: 0,
+            imes: 1.0,
+            intram1tumor: 1.6
         };
 
-        function calculatePrediction() {
-            // Show loading state
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('results').classList.add('hidden');
+        // Model coefficients
+        const bilateralCoefficients = {
+            intercept: 1.9498,
+            age: -0.0101,
+            mgmt: -0.1645,
+            eor95: 0.4898,
+            ces: -1.2336,
+            imes: 1.3461
+        };
 
-            // Simulate calculation delay for better UX
-            setTimeout(() => {
-                const inputs = getInputValues();
-                console.log('Current inputs:', inputs); // Debug log
-                const prediction = computeLogisticRegression(inputs);
-                displayResults(prediction, inputs);
-                
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('results').classList.remove('hidden');
-            }, 500);
-        }
+        const unilateralCoefficients = {
+            intercept: -0.7900,
+            age: -0.0274,
+            mgmt: 0.1188,
+            eor95: 0.6391,
+            intram1tumor: 1.9225
+        };
 
-        function getInputValues() {
-            return {
-                age: parseFloat(document.getElementById('age').value) || 60,
-                gender: parseInt(document.getElementById('gender').value) || 0,
-                mgmt: parseInt(document.getElementById('mgmt').value) || 0,
-                preopVolume: parseFloat(document.getElementById('preopVolume').value) || 30,
-                eor90: parseInt(document.getElementById('eor90').value) || 0,
-                location: parseInt(document.getElementById('location').value) || 0,
-                ces: parseInt(document.getElementById('ces').value) || 0,
-                imes: parseFloat(document.getElementById('imes').value) || 0.8
-            };
-        }
+        const modelStats = {
+            bilateral: { n: 46, survivalRate: 73.9, pseudoR2: 0.149 },
+            unilateral: { n: 50, survivalRate: 74.0, pseudoR2: 0.125 }
+        };
 
-        function computeLogisticRegression(inputs) {
-            // Calculate linear combination (logit)
-            const logit = modelCoefficients.intercept +
-                         modelCoefficients.age * inputs.age +
-                         modelCoefficients.gender * inputs.gender +
-                         modelCoefficients.mgmt * inputs.mgmt +
-                         modelCoefficients.preopVolume * inputs.preopVolume +
-                         modelCoefficients.eor90 * inputs.eor90 +
-                         modelCoefficients.location * inputs.location +
-                         modelCoefficients.ces * inputs.ces +
-                         modelCoefficients.imes * inputs.imes;
-
-            // Convert to probability using logistic function
-            const probability = 1 / (1 + Math.exp(-logit));
-
-            return {
-                probability: probability,
-                percentage: (probability * 100).toFixed(1),
-                riskCategory: getRiskCategory(probability),
-                logit: logit
-            };
-        }
-
-        function getRiskCategory(probability) {
-            if (probability >= 0.7) return { text: 'Low Risk', class: 'risk-low' };
-            if (probability >= 0.4) return { text: 'Moderate Risk', class: 'risk-moderate' };
-            return { text: 'High Risk', class: 'risk-high' };
-        }
-
-        function displayResults(prediction, inputs) {
-            // Update main prediction display
-            document.getElementById('survival-probability').textContent = prediction.percentage + '%';
-            
-            const riskElement = document.getElementById('risk-category');
-            riskElement.textContent = prediction.riskCategory.text;
-            riskElement.className = 'risk-indicator ' + prediction.riskCategory.class;
-
-            // Generate interpretation
-            generateInterpretation(inputs, prediction);
-        }
-
-        function generateInterpretation(inputs, prediction) {
-            const interpretationList = document.getElementById('interpretation-list');
-            interpretationList.innerHTML = '';
-
-            const factors = [
-                {
-                    name: 'Age',
-                    value: inputs.age,
-                    impact: inputs.age > 65 ? 'negative' : 'neutral',
-                    description: inputs.age > 65 ? 'Advanced age (>65) associated with worse prognosis' : 'Age within favorable range'
-                },
-                {
-                    name: 'MGMT Status',
-                    value: inputs.mgmt === 1 ? 'Methylated' : 'Unmethylated',
-                    impact: inputs.mgmt === 1 ? 'positive' : 'negative',
-                    description: inputs.mgmt === 1 ? 'Methylated MGMT associated with better response to treatment' : 'Unmethylated MGMT associated with poorer prognosis'
-                },
-                {
-                    name: 'Extent of Resection',
-                    value: inputs.eor90 === 1 ? '≥90%' : '<90%',
-                    impact: inputs.eor90 === 1 ? 'positive' : 'negative',
-                    description: inputs.eor90 === 1 ? 'High extent of resection (≥90%) favorable for survival' : 'Lower extent of resection (<90%) associated with worse outcomes'
-                },
-                {
-                    name: 'Cortical Excitability Score',
-                    value: inputs.ces,
-                    impact: inputs.ces === 0 ? 'positive' : inputs.ces === 1 ? 'neutral' : 'negative',
-                    description: inputs.ces === 0 ? 'Normal bilateral excitability - favorable' : 
-                                inputs.ces === 1 ? 'Moderate excitability changes' : 
-                                'Abnormal bilateral excitability - associated with worse survival'
-                },
-                {
-                    name: 'IntraM1 Excitability',
-                    value: inputs.imes.toFixed(2),
-                    impact: inputs.imes > 1.0 ? 'positive' : 'negative',
-                    description: inputs.imes > 1.0 ? 'Higher IMES suggests preserved intrahemispheric connectivity' : 'Lower IMES indicates impaired motor pathway integrity'
-                }
-            ];
-
-            factors.forEach(factor => {
-                const li = document.createElement('li');
-                const impactColor = factor.impact === 'positive' ? '#27ae60' : 
-                                   factor.impact === 'negative' ? '#e74c3c' : '#f39c12';
-                
-                li.innerHTML = `
-                    <strong style="color: ${impactColor}">${factor.name}:</strong> 
-                    ${factor.value} - ${factor.description}
-                `;
-                interpretationList.appendChild(li);
-            });
-        }
-
-        // Initialize on page load
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Set default values and calculate initial prediction
+            setupInputListeners();
+            updateModelInfo();
             calculatePrediction();
         });
 
-        // Add input change listeners for real-time updates
-        ['age', 'gender', 'mgmt', 'preopVolume', 'eor90', 'location', 'ces', 'imes'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener('change', function() {
-                    console.log(`${id} changed to:`, this.value); // Debug log
-                    // Auto-calculate on input change with debouncing
-                    clearTimeout(window.updateTimer);
-                    window.updateTimer = setTimeout(calculatePrediction, 300);
-                });
-                
-                // Also add input event for text inputs
-                if (element.type === 'number') {
-                    element.addEventListener('input', function() {
-                        clearTimeout(window.updateTimer);
-                        window.updateTimer = setTimeout(calculatePrediction, 500);
+        function setupInputListeners() {
+            ['age', 'imes', 'intram1tumor'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', function() {
+                        inputValues[id] = parseFloat(this.value) || 0;
+                        debouncedCalculate();
                     });
                 }
+            });
+        }
+
+        let calculateTimeout;
+        function debouncedCalculate() {
+            clearTimeout(calculateTimeout);
+            calculateTimeout = setTimeout(calculatePrediction, 150);
+        }
+
+        function setModel(model) {
+            currentModel = model;
+
+            // Update buttons
+            document.getElementById('btn-bilateral').classList.toggle('active', model === 'bilateral');
+            document.getElementById('btn-unilateral').classList.toggle('active', model === 'unilateral');
+
+            // Animate section transition
+            const bilateralSection = document.getElementById('bilateral-section');
+            const unilateralSection = document.getElementById('unilateral-section');
+
+            if (model === 'bilateral') {
+                unilateralSection.classList.add('hidden');
+                bilateralSection.classList.remove('hidden');
+            } else {
+                bilateralSection.classList.add('hidden');
+                unilateralSection.classList.remove('hidden');
             }
-        });
+
+            // Update prediction card style
+            const card = document.getElementById('prediction-card');
+            card.classList.toggle('bilateral', model === 'bilateral');
+            card.classList.toggle('unilateral', model === 'unilateral');
+
+            updateModelInfo();
+            calculatePrediction();
+        }
+
+        function setToggle(field, value) {
+            inputValues[field] = value;
+            document.getElementById(field).value = value;
+
+            // Update UI
+            const container = document.getElementById(field).parentElement;
+            container.querySelectorAll('.toggle-pill').forEach(pill => {
+                pill.classList.toggle('active', parseInt(pill.dataset.value) === value);
+            });
+
+            calculatePrediction();
+        }
+
+        function setCES(value) {
+            inputValues.ces = value;
+            document.getElementById('ces').value = value;
+
+            document.querySelectorAll('.ces-option').forEach(opt => {
+                opt.classList.toggle('active', parseInt(opt.dataset.value) === value);
+            });
+
+            calculatePrediction();
+        }
+
+        function toggleCollapsible(id) {
+            document.getElementById(id).classList.toggle('open');
+        }
+
+        function updateModelInfo() {
+            const stats = modelStats[currentModel];
+
+            document.getElementById('stat-n').textContent = stats.n;
+            document.getElementById('stat-survival').textContent = stats.survivalRate + '%';
+            document.getElementById('stat-r2').textContent = stats.pseudoR2;
+
+            // Update coefficient table
+            const container = document.getElementById('coef-table-container');
+            if (currentModel === 'bilateral') {
+                container.innerHTML = `
+                    <table class="coef-table">
+                        <thead>
+                            <tr><th>Variable</th><th>OR</th><th>95% CI</th><th>p-value</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Age (per year)</td><td>0.990</td><td>0.94-1.04</td><td>0.71</td></tr>
+                            <tr><td>MGMT Methylated</td><td>0.848</td><td>0.18-3.93</td><td>0.83</td></tr>
+                            <tr><td>EoR &ge;95%</td><td>1.632</td><td>0.30-8.74</td><td>0.57</td></tr>
+                            <tr class="highlight"><td>CES (0-2)</td><td>0.291</td><td>0.07-1.16</td><td>0.08</td></tr>
+                            <tr><td>IMES Ratio</td><td>3.842</td><td>0.45-33.15</td><td>0.22</td></tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top: 12px; font-size: 0.85em; color: #718096;">
+                        <strong style="color: #ecc94b;">Key:</strong> CES=2 has 56.5% survival vs 94.4% for CES=1 and 80.0% for CES=0
+                    </p>
+                `;
+            } else {
+                container.innerHTML = `
+                    <table class="coef-table">
+                        <thead>
+                            <tr><th>Variable</th><th>OR</th><th>95% CI</th><th>p-value</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Age (per year)</td><td>0.973</td><td>0.93-1.02</td><td>0.28</td></tr>
+                            <tr><td>MGMT Methylated</td><td>1.126</td><td>0.27-4.76</td><td>0.87</td></tr>
+                            <tr><td>EoR &ge;95%</td><td>1.895</td><td>0.39-9.22</td><td>0.43</td></tr>
+                            <tr class="highlight"><td>IntraM1 Tumor Ratio</td><td>6.838</td><td>0.98-47.85</td><td>0.053</td></tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top: 12px; font-size: 0.85em; color: #718096;">
+                        <strong style="color: #ecc94b;">Key:</strong> Higher IntraM1 ratio trends toward better survival
+                    </p>
+                `;
+            }
+        }
+
+        function calculatePrediction() {
+            // Get current input values
+            inputValues.age = parseFloat(document.getElementById('age').value) || 57;
+            inputValues.imes = parseFloat(document.getElementById('imes').value) || 1.0;
+            inputValues.intram1tumor = parseFloat(document.getElementById('intram1tumor').value) || 1.6;
+
+            let logit;
+            if (currentModel === 'bilateral') {
+                const c = bilateralCoefficients;
+                logit = c.intercept +
+                        c.age * inputValues.age +
+                        c.mgmt * inputValues.mgmt +
+                        c.eor95 * inputValues.eor95 +
+                        c.ces * inputValues.ces +
+                        c.imes * inputValues.imes;
+            } else {
+                const c = unilateralCoefficients;
+                logit = c.intercept +
+                        c.age * inputValues.age +
+                        c.mgmt * inputValues.mgmt +
+                        c.eor95 * inputValues.eor95 +
+                        c.intram1tumor * inputValues.intram1tumor;
+            }
+
+            const probability = 1 / (1 + Math.exp(-logit));
+            const percentage = (probability * 100).toFixed(1);
+
+            // Update display
+            document.getElementById('survival-probability').textContent = percentage + '%';
+            document.getElementById('gauge-fill').style.width = percentage + '%';
+            document.getElementById('model-indicator').textContent =
+                (currentModel === 'bilateral' ? 'Bilateral' : 'Unilateral') + ' Model';
+
+            // Update risk badge
+            const badge = document.getElementById('risk-badge');
+            const riskText = document.getElementById('risk-text');
+
+            badge.classList.remove('favorable', 'intermediate', 'poor');
+            if (probability >= 0.7) {
+                badge.classList.add('favorable');
+                riskText.textContent = 'Favorable Prognosis';
+            } else if (probability >= 0.4) {
+                badge.classList.add('intermediate');
+                riskText.textContent = 'Intermediate Prognosis';
+            } else {
+                badge.classList.add('poor');
+                riskText.textContent = 'Poor Prognosis';
+            }
+
+            updateFactorList();
+        }
+
+        function updateFactorList() {
+            const list = document.getElementById('factor-list');
+            const factors = [];
+
+            // Age
+            const ageImpact = inputValues.age > 65 ? 'negative' : (inputValues.age < 50 ? 'positive' : 'neutral');
+            factors.push({
+                name: 'Age',
+                value: inputValues.age + ' years',
+                impact: ageImpact,
+                icon: ageImpact === 'positive' ? '&#10003;' : (ageImpact === 'negative' ? '&#10007;' : '&#8212;')
+            });
+
+            // MGMT
+            factors.push({
+                name: 'MGMT Status',
+                value: inputValues.mgmt ? 'Methylated' : 'Unmethylated',
+                impact: inputValues.mgmt ? 'positive' : 'negative',
+                icon: inputValues.mgmt ? '&#10003;' : '&#10007;'
+            });
+
+            // EoR
+            factors.push({
+                name: 'Extent of Resection',
+                value: inputValues.eor95 ? '&ge;95%' : '&lt;95%',
+                impact: inputValues.eor95 ? 'positive' : 'negative',
+                icon: inputValues.eor95 ? '&#10003;' : '&#10007;'
+            });
+
+            if (currentModel === 'bilateral') {
+                // CES
+                const cesImpact = inputValues.ces === 0 ? 'positive' : (inputValues.ces === 1 ? 'neutral' : 'negative');
+                const cesDesc = inputValues.ces === 0 ? '80% survival' :
+                               (inputValues.ces === 1 ? '94% survival' : '57% survival');
+                factors.push({
+                    name: 'CES',
+                    value: 'Score ' + inputValues.ces + ' (' + cesDesc + ')',
+                    impact: cesImpact,
+                    icon: cesImpact === 'positive' ? '&#10003;' : (cesImpact === 'negative' ? '&#10007;' : '&#8212;')
+                });
+
+                // IMES
+                const imesImpact = inputValues.imes > 1.2 ? 'positive' : (inputValues.imes < 0.8 ? 'negative' : 'neutral');
+                factors.push({
+                    name: 'IMES Ratio',
+                    value: inputValues.imes.toFixed(2),
+                    impact: imesImpact,
+                    icon: imesImpact === 'positive' ? '&#10003;' : (imesImpact === 'negative' ? '&#10007;' : '&#8212;')
+                });
+            } else {
+                // IntraM1
+                const im1Impact = inputValues.intram1tumor > 1.8 ? 'positive' :
+                                 (inputValues.intram1tumor < 1.2 ? 'negative' : 'neutral');
+                factors.push({
+                    name: 'IntraM1 Tumor Ratio',
+                    value: inputValues.intram1tumor.toFixed(2),
+                    impact: im1Impact,
+                    icon: im1Impact === 'positive' ? '&#10003;' : (im1Impact === 'negative' ? '&#10007;' : '&#8212;')
+                });
+            }
+
+            list.innerHTML = factors.map(f => `
+                <li class="factor-item">
+                    <div class="factor-icon ${f.impact}">${f.icon}</div>
+                    <div class="factor-content">
+                        <div class="factor-name">${f.name}</div>
+                        <div class="factor-value">${f.value}</div>
+                    </div>
+                </li>
+            `).join('');
+        }
     </script>
 </body>
 </html>
