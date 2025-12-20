@@ -694,7 +694,7 @@
         <div class="model-toggle">
             <button class="model-btn active" id="btn-bilateral" onclick="setModel('bilateral')">
                 <span class="model-name">Bilateral Mapping</span>
-                <span class="model-desc">CES + IMES (n=46)</span>
+                <span class="model-desc">CES + IntraM1 Tumor (n=46)</span>
             </button>
             <button class="model-btn" id="btn-unilateral" onclick="setModel('unilateral')">
                 <span class="model-name">Unilateral Mapping</span>
@@ -767,14 +767,16 @@
                     </div>
 
                     <div class="form-group">
-                        <label>IMES Ratio</label>
-                        <input type="number" id="imes" value="1.0" min="0.2" max="2.5" step="0.05">
+                        <label>IntraM1 Tumor (IMES)</label>
+                        <input type="number" id="intram1tumor-bilateral" value="1.6" min="0.5" max="3.0" step="0.05">
                         <div class="range-indicator">
-                            <span>0.28</span>
+                            <span>0.57</span>
                             <span>LL/UL RMT in tumor hemisphere</span>
-                            <span>2.10</span>
+                            <span>2.93</span>
                         </div>
+                        <div class="help-text">Higher ratios trend toward better survival (OR=2.62, p=0.22)</div>
                     </div>
+
                 </div>
 
                 <!-- nTMS Metrics - Unilateral -->
@@ -832,7 +834,7 @@
                         <div class="stat-label">12-mo Survival</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="stat-r2">0.149</div>
+                        <div class="stat-value" id="stat-r2">0.186</div>
                         <div class="stat-label">Pseudo R&sup2;</div>
                     </div>
                 </div>
@@ -874,18 +876,17 @@
             mgmt: 0,
             eor95: 1,
             ces: 0,
-            imes: 1.0,
             intram1tumor: 1.6
         };
 
-        // Model coefficients
+        // Model coefficients (CES + IntraM1 Tumor alone)
         const bilateralCoefficients = {
-            intercept: 1.9498,
-            age: -0.0101,
-            mgmt: -0.1645,
-            eor95: 0.4898,
-            ces: -1.2336,
-            imes: 1.3461
+            intercept: 0.1600,
+            age: -0.0104,
+            mgmt: 0.7775,
+            eor95: 0.7010,
+            ces: -0.9425,
+            intram1tumor: 0.9631
         };
 
         const unilateralCoefficients = {
@@ -897,7 +898,7 @@
         };
 
         const modelStats = {
-            bilateral: { n: 46, survivalRate: 73.9, pseudoR2: 0.149 },
+            bilateral: { n: 46, survivalRate: 63.0, pseudoR2: 0.186 },
             unilateral: { n: 50, survivalRate: 74.0, pseudoR2: 0.125 }
         };
 
@@ -909,7 +910,8 @@
         });
 
         function setupInputListeners() {
-            ['age', 'imes', 'intram1tumor'].forEach(id => {
+            // Standard inputs (id matches inputValues key)
+            ['age', 'intram1tumor'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.addEventListener('input', function() {
@@ -918,6 +920,15 @@
                     });
                 }
             });
+
+            // Bilateral IntraM1 Tumor (different id for bilateral section)
+            const bilateralTumor = document.getElementById('intram1tumor-bilateral');
+            if (bilateralTumor) {
+                bilateralTumor.addEventListener('input', function() {
+                    inputValues.intram1tumor = parseFloat(this.value) || 1.6;
+                    debouncedCalculate();
+                });
+            }
         }
 
         let calculateTimeout;
@@ -998,15 +1009,15 @@
                             <tr><th>Variable</th><th>OR</th><th>95% CI</th><th>p-value</th></tr>
                         </thead>
                         <tbody>
-                            <tr><td>Age (per year)</td><td>0.990</td><td>0.94-1.04</td><td>0.71</td></tr>
-                            <tr><td>MGMT Methylated</td><td>0.848</td><td>0.18-3.93</td><td>0.83</td></tr>
-                            <tr><td>EoR &ge;95%</td><td>1.632</td><td>0.30-8.74</td><td>0.57</td></tr>
-                            <tr class="highlight"><td>CES (0-2)</td><td>0.291</td><td>0.07-1.16</td><td>0.08</td></tr>
-                            <tr><td>IMES Ratio</td><td>3.842</td><td>0.45-33.15</td><td>0.22</td></tr>
+                            <tr><td>Age (per year)</td><td>0.990</td><td>0.94-1.04</td><td>0.73</td></tr>
+                            <tr><td>MGMT Methylated</td><td>2.176</td><td>0.50-9.42</td><td>0.30</td></tr>
+                            <tr><td>EoR &ge;95%</td><td>2.016</td><td>0.39-10.3</td><td>0.40</td></tr>
+                            <tr class="highlight"><td>CES (0-2)</td><td>0.390</td><td>0.13-1.22</td><td>0.10</td></tr>
+                            <tr class="highlight"><td>IntraM1 Tumor</td><td>2.620</td><td>0.55-12.4</td><td>0.22</td></tr>
                         </tbody>
                     </table>
                     <p style="margin-top: 12px; font-size: 0.85em; color: #718096;">
-                        <strong style="color: #ecc94b;">Key:</strong> CES=2 has 56.5% survival vs 94.4% for CES=1 and 80.0% for CES=0
+                        <strong style="color: #ecc94b;">Key:</strong> Higher IntraM1 Tumor &rarr; better survival; CES 0-1 &rarr; better than CES 2
                     </p>
                 `;
             } else {
@@ -1032,8 +1043,13 @@
         function calculatePrediction() {
             // Get current input values
             inputValues.age = parseFloat(document.getElementById('age').value) || 57;
-            inputValues.imes = parseFloat(document.getElementById('imes').value) || 1.0;
-            inputValues.intram1tumor = parseFloat(document.getElementById('intram1tumor').value) || 1.6;
+
+            // Get IntraM1 values based on current model
+            if (currentModel === 'bilateral') {
+                inputValues.intram1tumor = parseFloat(document.getElementById('intram1tumor-bilateral').value) || 1.6;
+            } else {
+                inputValues.intram1tumor = parseFloat(document.getElementById('intram1tumor').value) || 1.6;
+            }
 
             let logit;
             if (currentModel === 'bilateral') {
@@ -1043,7 +1059,7 @@
                         c.mgmt * inputValues.mgmt +
                         c.eor95 * inputValues.eor95 +
                         c.ces * inputValues.ces +
-                        c.imes * inputValues.imes;
+                        c.intram1tumor * inputValues.intram1tumor;
             } else {
                 const c = unilateralCoefficients;
                 logit = c.intercept +
@@ -1130,13 +1146,14 @@
                     icon: cesImpact === 'positive' ? '&#10003;' : (cesImpact === 'negative' ? '&#10007;' : '&#8212;')
                 });
 
-                // IMES
-                const imesImpact = inputValues.imes > 1.2 ? 'positive' : (inputValues.imes < 0.8 ? 'negative' : 'neutral');
+                // IntraM1 Tumor (higher = better, OR=2.62)
+                const tumorImpact = inputValues.intram1tumor > 1.8 ? 'positive' :
+                                   (inputValues.intram1tumor < 1.3 ? 'negative' : 'neutral');
                 factors.push({
-                    name: 'IMES Ratio',
-                    value: inputValues.imes.toFixed(2),
-                    impact: imesImpact,
-                    icon: imesImpact === 'positive' ? '&#10003;' : (imesImpact === 'negative' ? '&#10007;' : '&#8212;')
+                    name: 'IntraM1 Tumor',
+                    value: inputValues.intram1tumor.toFixed(2) + ' (LL/UL tumor)',
+                    impact: tumorImpact,
+                    icon: tumorImpact === 'positive' ? '&#10003;' : (tumorImpact === 'negative' ? '&#10007;' : '&#8212;')
                 });
             } else {
                 // IntraM1
