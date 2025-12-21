@@ -47,12 +47,20 @@
         }
 
         .header-image {
-            max-width: 320px;
-            width: 100%;
-            margin: 20px auto 5px;
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
             border-radius: 10px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .toggle-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 20px auto;
         }
 
         /* Model Toggle */
@@ -60,8 +68,7 @@
             display: flex;
             justify-content: center;
             gap: 0;
-            margin: 25px auto;
-            max-width: 500px;
+            max-width: 400px;
             background: rgba(255,255,255,0.05);
             border-radius: 12px;
             padding: 4px;
@@ -697,19 +704,21 @@
         <header class="header">
             <h1>nTMS GBM Survival Prediction</h1>
             <p>Cortical Excitability-Based Prognostic Calculator</p>
-            <img src="Image for Website.png" alt="nTMS Motor Mapping with MEP Traces" class="header-image">
         </header>
 
-        <!-- Model Toggle -->
-        <div class="model-toggle">
-            <button class="model-btn active" id="btn-bilateral" onclick="setModel('bilateral')">
-                <span class="model-name">Bilateral Mapping</span>
-                <span class="model-desc">CES + IntraM1 Tumor (n=46)</span>
-            </button>
-            <button class="model-btn" id="btn-unilateral" onclick="setModel('unilateral')">
-                <span class="model-name">Unilateral Mapping</span>
-                <span class="model-desc">IntraM1 Ratio (n=50)</span>
-            </button>
+        <!-- Model Toggle with Image -->
+        <div class="toggle-section">
+            <img src="Image for Website.png" alt="nTMS Motor Mapping with MEP Traces" class="header-image">
+            <div class="model-toggle">
+                <button class="model-btn active" id="btn-bilateral" onclick="setModel('bilateral')">
+                    <span class="model-name">Bilateral Mapping</span>
+                    <span class="model-desc">CES + IntraM1 Tumor (n=46)</span>
+                </button>
+                <button class="model-btn" id="btn-unilateral" onclick="setModel('unilateral')">
+                    <span class="model-name">Unilateral Mapping</span>
+                    <span class="model-desc">IntraM1 Ratio (n=50)</span>
+                </button>
+            </div>
         </div>
 
         <div class="main-content">
